@@ -19,12 +19,11 @@ import frc.robot.Constants.RobotConstants;
 public class DriveUsingController extends Command {
   private static final double DEADBAND = 0.05;
   private static final double kP = 1 / RobotConstants.CAMERA_FOV;
+  private static final double TAG_CENTER_OFFSET = 2.3;
 
   private final SwerveSubsystem m_drivetrain;
   private final AprilTagSubsystem m_aprilTag;
   private final CommandXboxController m_xboxController;
-
- 
 
   /** Creates a new DriveUsingController. */
   public DriveUsingController(Subsystems subsystems, CommandXboxController xboxController) {
@@ -37,7 +36,8 @@ public class DriveUsingController extends Command {
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {}
+  public void initialize() {
+  }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
@@ -45,7 +45,7 @@ public class DriveUsingController extends Command {
     double rSpeed;
     double xSpeed = -m_xboxController.getLeftY();
     double ySpeed = -m_xboxController.getLeftX();
-    double inputScalar = Math.max(1.0-m_xboxController.getRightTriggerAxis(), 0.15);
+    double inputScalar = Math.max(1.0 - m_xboxController.getRightTriggerAxis(), 0.15);
 
     // Applies deadbands to x and y joystick values and multiples all
     // values with inputScalar whihc allows finer driving control.
@@ -54,22 +54,26 @@ public class DriveUsingController extends Command {
 
     Optional<PhotonTrackedTarget> optionalTarget = Optional.empty();
     if (m_xboxController.rightBumper().getAsBoolean()) {
-      optionalTarget = m_aprilTag.getTarget(4); //TODO (AprilTagSubsystem.getSpeakerCenterApriltagId());
+      optionalTarget = m_aprilTag.getTarget(4); // TODO (AprilTagSubsystem.getSpeakerCenterApriltagId());
     }
 
     if (optionalTarget.isPresent()) {
-      var angleToTarget = optionalTarget.get().getYaw();
-      rSpeed = angleToTarget * kP;
+      var angleToTarget = optionalTarget.get().getYaw() + TAG_CENTER_OFFSET;
+      if (Math.abs(angleToTarget) < 0.75) {
+        rSpeed = 0;
+      } else {
+        rSpeed = -angleToTarget * kP;
+      }
     } else {
       rSpeed = -m_xboxController.getRightX();
       rSpeed = MathUtil.applyDeadband(rSpeed, DEADBAND) * inputScalar;
-    } 
+    }
 
     m_drivetrain.drive(
-      xSpeed,
-      ySpeed,
-      rSpeed,
-      true);
+        xSpeed,
+        ySpeed,
+        rSpeed,
+        true);
   }
 
   // Called once the command ends or is interrupted.

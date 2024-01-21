@@ -50,8 +50,7 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
   private DoubleLogEntry targetXLogger = new DoubleLogEntry(DataLogManager.getLog(), "AprilTag/Target X");
   private DoubleLogEntry targetYLogger = new DoubleLogEntry(DataLogManager.getLog(), "AprilTag/Target Y");
   private DoubleLogEntry targetAngleLogger = new DoubleLogEntry(DataLogManager.getLog(), "AprilTag/Target Angle");
-
-  private AprilTagFieldLayout tagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+  private AprilTagFieldLayout tagLayout;
   private SendableChooser<Integer> aprilTagIdChooser = new SendableChooser<Integer>();
   private AprilTagFieldLayout aprilTagLayout;
 
@@ -64,11 +63,12 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
     }
     aprilTagIdChooser.setDefaultOption("1", 1);
     try {
-      aprilTagLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
-    } catch (IOException e) {
+      AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+      tagLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
+    }
+    catch (IOException e) {
       DriverStation.reportError("Couldn't load apriltag field layout", true);
     }
-
   }
 
   @Override
@@ -107,13 +107,16 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
   }
 
   /**
-   * Returns the transform from the camera to the AprilTag with input ID.
-   * 
+   * Returns an optional of the transform from the camera to the AprilTag with input ID. 
    * @param id The AprilTag ID.
    * @return The transform from the camera to the AprilTag with input ID.
    */
-  public Transform3d getCameraToTarget(int id) {
-    return getTarget(id).get().getBestCameraToTarget();
+  public Optional<Transform3d> getCameraToTarget(int id) {
+    if (getTarget(id).isEmpty()) {
+      return Optional.empty();
+    }
+      
+    return Optional.of(getTarget(id).get().getBestCameraToTarget());
   }
 
   /**
@@ -158,24 +161,26 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
   }
 
   /**
-   * Returns a Pose3d that represents the field position of the tag (origin at
-   * blue).
+   * Returns an optional Pose3d that represents the field position of the tag (origin at blue).
    * 
    * @param id The ID of the target tag.
    * @return A Pose3d that represents the field position of the tag.
    */
-  public Pose3d getTagPose(int id) {
-    return tagLayout.getTagPose(id).get();
+  public Optional<Pose3d> getTagPose(int id) {
+    return tagLayout.getTagPose(id);
   }
 
   /**
-   * Returns the estimated field relative Pose3d of the robot (origin at blue).
+   * Returns the estimated field relative Pose3d of the robot (origin at blue). Returns a Pose3d with x, y, z = -1.0 if tag not found.
    * 
    * @param id The ID of the target tag.
    * @return the estimated field relative Pose3d of the robot.
    */
   public Pose3d getEstimatedRobotPose(int id) {
-    return getTagPose(id).transformBy(getCameraToTarget(id).inverse()).transformBy(getCameraToRobotTransform());
+    if (getCameraToTarget(id).isEmpty()) {
+      return new Pose3d(-1.0, -1.0, -1.0, new Rotation3d());
+    }
+    return getTagPose(id).get().transformBy(getCameraToTarget(id).get().inverse()).transformBy(getCameraToRobotTransform());
   }
 
   /**
@@ -196,13 +201,16 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
     targetLayout.addDouble("Distance", () -> getDistanceToTarget(aprilTagIdChooser.getSelected()));
     targetLayout.addDouble("Angle", () -> getAngleToTarget(aprilTagIdChooser.getSelected()));
 
-    ShuffleboardLayout estimationLayout = visionTab.getLayout("Pose estimation info");
-    estimationLayout.addDouble("X", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getX());
-    estimationLayout.addDouble("Y", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getY());
-    estimationLayout.addDouble("Z", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getZ());
-
-    VideoSource video = new HttpCamera("photonvision_Port_1182_Output_MJPEG_Server",
-        "http://photonvision.local:1182/?action=stream",
+    ShuffleboardLayout estimationLayout = visionTab.getLayout("Pose Estimation Info", BuiltInLayouts.kList)
+      .withPosition(6, 0)
+      .withSize(2, 4);
+    estimationLayout.addDouble("Tag pose X", () -> getTagPose(aprilTagIdChooser.getSelected()).get().getX());
+    estimationLayout.addDouble("Tag pose Y", () -> getTagPose(aprilTagIdChooser.getSelected()).get().getY());
+    estimationLayout.addDouble("Estimated Robot X", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getX());
+    estimationLayout.addDouble("Estimated Robot Y", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getY());
+    estimationLayout.addDouble("Estimated Robot Z", () -> getEstimatedRobotPose(aprilTagIdChooser.getSelected()).getZ());
+  
+    VideoSource video = new HttpCamera("photonvision_Port_1182_Output_MJPEG_Server", "http://photonvision.local:1182/?action=stream",
         HttpCameraKind.kMJPGStreamer);
     visionTab.add("April Tag", video)
         .withWidget(BuiltInWidgets.kCameraStream)

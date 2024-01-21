@@ -51,6 +51,7 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
   private DoubleLogEntry targetYLogger = new DoubleLogEntry(DataLogManager.getLog(), "AprilTag/Target Y");
   private DoubleLogEntry targetAngleLogger = new DoubleLogEntry(DataLogManager.getLog(), "AprilTag/Target Angle");
 
+  private AprilTagFieldLayout tagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
   private SendableChooser<Integer> aprilTagIdChooser = new SendableChooser<Integer>();
   private AprilTagFieldLayout aprilTagLayout;
 

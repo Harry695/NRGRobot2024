@@ -44,6 +44,7 @@ import frc.robot.Constants.RobotConstants;
 
 @RobotPreferencesLayout(groupName = "AprilTag", row = 0, column = 4, width = 2, height = 2)
 public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
+  //Higher stdev to trust vision less
   public static final Matrix<N3, N1> SINGLE_TAG_STD_DEVS = VecBuilder.fill(4, 4, 8);
   public static final Matrix<N3, N1> MULTI_TAG_STD_DEVS = VecBuilder.fill(0.5, 0.5, 1);
 
@@ -55,6 +56,8 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
   private double lastEstTimestamp = 0;
   private final SendableChooser<Integer> aprilTagIdChooser = new SendableChooser<Integer>();
   private final AprilTagFieldLayout aprilTagLayout;
+
+  private Matrix<N3, N1> lastStdev;
 
   /** Creates a new PhotonVisionSubsystem. */
   public AprilTagSubsystem() {
@@ -121,7 +124,16 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
       estStdDevs = estStdDevs.times(1 + (avgDist * avgDist / 30));
     }
 
+    lastStdev = estStdDevs;
     return estStdDevs;
+  }
+
+  /**
+   * Returns the last calculated standard deviation for estimated pose.
+   * @return The last calculated standard deviation for estimated pose.
+   */
+  public Matrix<N3, N1> getLastStdev() {
+    return lastStdev;
   }
 
   /**
@@ -209,7 +221,8 @@ public class AprilTagSubsystem extends PhotonVisionSubsystemBase {
     targetLayout.addBoolean("Has Target", this::hasTargets);
     targetLayout.addDouble("Distance", () -> getDistanceToTarget(aprilTagIdChooser.getSelected()));
     targetLayout.addDouble("Angle", () -> getAngleToTarget(aprilTagIdChooser.getSelected()));
-
+    targetLayout.addString("Standard Deviation", () -> getLastStdev().toString());
+    
     VideoSource video = new HttpCamera("photonvision_Port_1184_Output_MJPEG_Server",
         "http://photonvision.local:1184/?action=stream",
         HttpCameraKind.kMJPGStreamer);

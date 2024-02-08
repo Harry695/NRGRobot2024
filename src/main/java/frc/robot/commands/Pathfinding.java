@@ -6,6 +6,7 @@ package frc.robot.commands;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,9 +17,9 @@ import frc.robot.subsystems.SwerveSubsystem;
 
 /** Add your docs here. */
 public class Pathfinding {
-	private static final double PATH_SPEED_PERCENT = 0.5;
+	private static final double PATH_SPEED_PERCENT = 0.1;
 	private static final Pose2d BLUE_SPEAKER_FRONT = new Pose2d(
-			new Translation2d(1.55, 5.52),
+			new Translation2d(2.25, 5.52),
 			new Rotation2d(0));
 
 	/**
@@ -38,7 +39,18 @@ public class Pathfinding {
 		return AutoBuilder.pathfindToPose(BLUE_SPEAKER_FRONT, constraints);
 	}
 
+	public static Command scoreInAmp(Subsystems subsystems) {
+		PathPlannerPath path = PathPlannerPath.fromPathFile("PathToAmp");
+		return AutoBuilder.followPath(path);
+	}
+
+	public static Command PathToStage(Subsystems subsystems) {
+		PathPlannerPath path = PathPlannerPath.fromPathFile("PathToStage");
+		return AutoBuilder.followPath(path);
+	}
+
 	private Pathfinding() {
 		throw new UnsupportedOperationException("This is a utility class!");
 	}
+
 }

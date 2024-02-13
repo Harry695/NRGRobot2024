@@ -18,7 +18,6 @@ import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -141,6 +140,13 @@ public class ArmSubsystem extends SubsystemBase {
     setMotorVoltages(powerPercent * RobotController.getBatteryVoltage());
   }
 
+  /**
+   * Stows the arm.
+   */
+  public void stow() {
+    setGoalAngle(Math.toRadians(-25));
+  }
+
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
@@ -152,7 +158,10 @@ public class ArmSubsystem extends SubsystemBase {
       setMotorVoltages(feedForward + feedback);
     }
   }
-
+  
+  /**
+   * Adds the Shufflboard tab.
+   */
   public void addShuffleBoardTab() {
     if (!enableTab.getValue()) {
       return;

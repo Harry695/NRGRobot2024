@@ -103,7 +103,7 @@ public class RobotContainer {
 
     m_operatorController.povUp().onTrue(Commands.runOnce(() -> m_subsystems.armSubsystem.setGoalAngle(Math.toRadians(45)), m_subsystems.armSubsystem));
     m_operatorController.povRight().onTrue(Commands.runOnce(() -> m_subsystems.armSubsystem.setGoalAngle(0), m_subsystems.armSubsystem));
-    m_operatorController.povDown().onTrue(Commands.runOnce(() -> m_subsystems.armSubsystem.setGoalAngle(Math.toRadians(-25)), m_subsystems.armSubsystem));
+    m_operatorController.povDown().onTrue(Commands.runOnce(() -> m_subsystems.armSubsystem.stow(), m_subsystems.armSubsystem));
     m_operatorController.povLeft().onTrue(Commands.runOnce(() -> m_subsystems.armSubsystem.disable(), m_subsystems.armSubsystem));
 
 

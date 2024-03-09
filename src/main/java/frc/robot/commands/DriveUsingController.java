@@ -109,8 +109,7 @@ public class DriveUsingController extends Command {
       targetOrientation = MathUtil.angleModulus(targetOrientation + angleToTarget);
       profiledPIDController.setPID(
           KP_APRIL_TAG.getValue(), KI_APRIL_TAG.getValue(), KD_APRIL_TAG.getValue());
-      rSpeed =
-          Math.abs(ySpeed) * profiledPIDController.calculate(currentOrientation, targetOrientation);
+      rSpeed = profiledPIDController.calculate(currentOrientation, targetOrientation);
     } else if (optionalNoteTarget.isPresent()) {
       double angleToTarget = Math.toRadians(noteVision.get().getAngleToBestTarget());
       targetOrientation = MathUtil.angleModulus(targetOrientation + angleToTarget);

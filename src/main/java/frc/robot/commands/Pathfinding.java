@@ -21,7 +21,7 @@ import java.util.Optional;
 
 /** Add your docs here. */
 public class Pathfinding {
-  private static final double PATH_SPEED_PERCENT = 0.2;
+  private static final double PATH_SPEED_PERCENT = 0.5;
   private static final Pose2d BLUE_SPEAKER_FRONT =
       new Pose2d(new Translation2d(1.55, 5.52), new Rotation2d(0));
   private static final Pose2d RED_SPEAKER_FRONT =
@@ -87,8 +87,14 @@ public class Pathfinding {
    * @return A command in which the robot will pathfind to the front of the blue amp.
    */
   public static Command pathFindToAmp2() {
+    PathConstraints constraints =
+        new PathConstraints(
+            PATH_SPEED_PERCENT * SwerveSubsystem.getMaxSpeed(),
+            PATH_SPEED_PERCENT * SwerveSubsystem.getMaxAcceleration(),
+            PATH_SPEED_PERCENT * SwerveSubsystem.getRotationalConstraints().maxVelocity,
+            PATH_SPEED_PERCENT * SwerveSubsystem.getRotationalConstraints().maxAcceleration);
     PathPlannerPath path = PathPlannerPath.fromPathFile("Amp Test Path");
-    return AutoBuilder.followPath(path);
+    return AutoBuilder.pathfindThenFollowPath(path, constraints);
   }
 
   private Pathfinding() {

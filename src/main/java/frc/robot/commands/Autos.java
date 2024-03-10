@@ -149,6 +149,7 @@ public final class Autos {
     eventMaps.put("SetShooterRPMSubwooferShot", setShooterRPM(subsystems, SUBWOOFER_SHOT_RPM));
     eventMaps.put("SetSubwooferRPMAndWait", setShooterRPMAndWait(subsystems, SUBWOOFER_SHOT_RPM));
 
+    eventMaps.put("SetArmAngleAmp", setArmAngle(subsystems, ArmSubsystem.AMP_ANGLE));
     eventMaps.put("SetArmAngleSpikeShot", setArmAngle(subsystems, SPIKE_SHOT_ANGLE));
     eventMaps.put("SetArmAngleAmpFarShot", setArmAngle(subsystems, AMP_FARSHOT_ANGLE));
     eventMaps.put("SetArmAngleSourceFarShot", setArmAngle(subsystems, SOURCE_FARSHOT_ANGLE));

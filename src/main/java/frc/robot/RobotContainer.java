@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.RobotConstants.OperatorConstants;
+import frc.robot.commands.AlignToAmp;
 import frc.robot.commands.ArmCommands;
 import frc.robot.commands.Autos;
 import frc.robot.commands.DriveCommands;
@@ -99,6 +100,7 @@ public class RobotContainer {
     driverController.a().onTrue(Pathfinding.pathFindToSpeakerFront());
     driverController.b().whileTrue(Pathfinding.pathFindToAmp());
     driverController.y().whileTrue(Pathfinding.pathFindToAmp2());
+    driverController.rightBumper().whileTrue(new AlignToAmp(subsystems));
     driverController.rightStick().onTrue(DriveCommands.autoOrientToSpeaker(subsystems));
     driverController.rightStick().onFalse(DriveCommands.disableAutoOrientation(subsystems));
 

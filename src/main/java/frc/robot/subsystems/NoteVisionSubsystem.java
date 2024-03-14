@@ -31,15 +31,39 @@ import frc.robot.Constants.RobotConstants;
 public class NoteVisionSubsystem extends PhotonVisionSubsystemBase {
   @RobotPreferencesValue(column = 0, row = 0)
   public static final RobotPreferences.BooleanValue ENABLED =
-      new RobotPreferences.BooleanValue("NoteVision", "Enabled", false);
+      new RobotPreferences.BooleanValue("NoteVision", "Enabled", true);
 
   @RobotPreferencesValue(column = 1, row = 0)
   public static final RobotPreferences.BooleanValue ENABLE_TAB =
       new RobotPreferences.BooleanValue("NoteVision", "Enable Tab", false);
 
+  // TODO: determine real pipeline
+  public static final int NOTE_PIPELINE_INDEX = 0;
+  public static final int APRILTAG_PIPELINE_INDEX = 1;
+
   /** Creates a new NoteSubsystem. */
   public NoteVisionSubsystem() {
     super("948ColorCamera", RobotConstants.NOTE_ROBOT_TO_CAMERA);
+    camera.setPipelineIndex(NOTE_PIPELINE_INDEX);
+  }
+
+  /** Set the camera pipeline to Apriltag detection. */
+  public void setApriltagPipeline() {
+    camera.setPipelineIndex(APRILTAG_PIPELINE_INDEX);
+  }
+
+  /** Set the camera pipeline to note detection. */
+  public void setNotePipeline() {
+    camera.setPipelineIndex(NOTE_PIPELINE_INDEX);
+  }
+
+  /**
+   * Returns the index of current pipeline on the camera.
+   *
+   * @return The index of current pipeline on the camera.
+   */
+  public int getCurrentPipelineIndex() {
+    return camera.getPipelineIndex();
   }
 
   /** Adds a tab for Note Vision in Shuffleboard. */
@@ -56,6 +80,7 @@ public class NoteVisionSubsystem extends PhotonVisionSubsystemBase {
             .withSize(2, 5);
     targetLayout.addBoolean("Has Target", this::hasTargets);
     targetLayout.addDouble("Angle", this::getAngleToBestTarget);
+    targetLayout.addDouble("Pipeline Index", this::getCurrentPipelineIndex);
 
     VideoSource video =
         new HttpCamera(

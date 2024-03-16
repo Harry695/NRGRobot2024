@@ -15,14 +15,14 @@ import frc.robot.subsystems.SwerveSubsystem;
 import java.util.Optional;
 
 public class AlignToAmp extends Command {
-  private static final double SPEED_FACTOR = 0.5;
+  private static final double SPEED_FACTOR = 0.1;
 
   private SwerveSubsystem drivetrain;
   private Optional<NoteVisionSubsystem> noteVision;
 
   ProfiledPIDController controller =
       new ProfiledPIDController(
-          1.0,
+          0.2,
           0,
           0,
           new Constraints(
@@ -48,7 +48,7 @@ public class AlignToAmp extends Command {
   public void execute() {
     double angle = noteVision.get().getAngleToBestTarget();
     double xSpeed = controller.calculate(angle);
-    drivetrain.drive(xSpeed, 0, 0, true);
+    drivetrain.drive(xSpeed * SPEED_FACTOR, 0, 0, true);
     // drivetrain.drive(0, xSpeed, 0, false); //alternate driving that uses
   }
 

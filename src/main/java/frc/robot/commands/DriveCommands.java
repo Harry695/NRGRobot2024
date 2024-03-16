@@ -124,7 +124,7 @@ public final class DriveCommands {
 
   /**
    * Returns a command to enable auto orient to note mode.
-   * 
+   *
    * @param subsystems The subsystems container.
    * @return
    */

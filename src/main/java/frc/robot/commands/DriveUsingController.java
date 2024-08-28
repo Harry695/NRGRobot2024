@@ -11,6 +11,7 @@ import com.nrg948.preferences.RobotPreferencesValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Subsystems;
@@ -39,6 +40,7 @@ public class DriveUsingController extends Command {
   private double previousOrientation = 0;
   private double previousRInput = 0;
   private Rotation2d lockOrientation;
+  private Timer timer;
 
   /** Creates a new DriveUsingController. */
   public DriveUsingController(Subsystems subsystems, CommandXboxController xboxController) {
@@ -65,6 +67,7 @@ public class DriveUsingController extends Command {
     controller.reset(currentOrientation.getRadians());
 
     lockOrientation = currentOrientation;
+    timer = new Timer();
   }
 
   // Called every time the scheduler runs while the command is scheduled.
@@ -92,7 +95,24 @@ public class DriveUsingController extends Command {
     if (targetOrientation.isEmpty() && rInput == 0) {
       // assign last orientation when input is not 0 to the target orientation
       if (previousRInput != 0) {
-        lockOrientation = Rotation2d.fromRadians(previousOrientation);
+        // estimate the angle that the angular momentum will carry the robot after rotation stops
+        // using kinematics
+        // double measuredOmega =
+        //     (currentOrientation - previousOrientation)
+        //         / (Timer.getFPGATimestamp() - previousTimeStamp);
+        // double expectedOrientation =
+        //     currentOrientation
+        //         + Math.signum(measuredOmega)
+        //             * Math.pow(measuredOmega, 2)
+        //             / (2
+        //                 * SwerveSubsystem.getRotationalConstraints()
+        //                     .maxAcceleration); // assumes acceleration is max
+
+        timer.reset();
+        timer.start();
+      }
+      if (timer.get() < 0.5) {
+        lockOrientation = Rotation2d.fromRadians(currentOrientation);
       }
       targetOrientation = Optional.of(lockOrientation);
     }
@@ -113,6 +133,7 @@ public class DriveUsingController extends Command {
 
     previousRInput = rInput;
     previousOrientation = currentOrientation;
+
     drivetrain.drive(xSpeed, ySpeed, rSpeed, true);
   }
 

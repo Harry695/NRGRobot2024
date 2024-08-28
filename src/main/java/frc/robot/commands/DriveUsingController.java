@@ -61,7 +61,10 @@ public class DriveUsingController extends Command {
             SwerveSubsystem.getRotationalConstraints());
     controller.enableContinuousInput(-Math.PI, Math.PI);
     controller.setIZone(Math.toRadians(5));
-    controller.reset(drivetrain.getOrientation().getRadians());
+    Rotation2d currentOrientation = drivetrain.getOrientation();
+    controller.reset(currentOrientation.getRadians());
+
+    lockOrientation = currentOrientation;
   }
 
   // Called every time the scheduler runs while the command is scheduled.
@@ -92,9 +95,11 @@ public class DriveUsingController extends Command {
         lockOrientation = Rotation2d.fromRadians(previousOrientation);
       }
       targetOrientation = Optional.of(lockOrientation);
-    } 
+    }
 
-    if (targetOrientation.isPresent()) { // if there targetOrientation wasn't empty to begin with OR maintain orientation is active
+    if (targetOrientation
+        .isPresent()) { // if there targetOrientation wasn't empty to begin with OR maintain
+      // orientation is active
       double feedback =
           controller.calculate(currentOrientation, targetOrientation.get().getRadians());
 

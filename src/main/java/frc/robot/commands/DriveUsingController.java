@@ -36,6 +36,10 @@ public class DriveUsingController extends Command {
   private final CommandXboxController xboxController;
   private ProfiledPIDController controller;
 
+  private double previousOrientation = 0;
+  private double previousRInput = 0;
+  private Rotation2d lockOrientation;
+
   /** Creates a new DriveUsingController. */
   public DriveUsingController(Subsystems subsystems, CommandXboxController xboxController) {
     // Use addRequirements() here to declare subsystem dependencies.
@@ -75,11 +79,22 @@ public class DriveUsingController extends Command {
 
     Optional<Rotation2d> targetOrientation = drivetrain.getTargetOrientation();
 
-    if (targetOrientation.isEmpty()) {
-      rSpeed = -xboxController.getRightX();
-      rSpeed = MathUtil.applyDeadband(rSpeed, DEADBAND) * inputScalar;
-    } else {
-      double currentOrientation = drivetrain.getOrientation().getRadians();
+    double currentOrientation = drivetrain.getOrientation().getRadians();
+
+    // get controller rotation input
+    double rInput = -xboxController.getRightX();
+    rInput = MathUtil.applyDeadband(rInput, DEADBAND) * inputScalar;
+
+    // check if maintain orientation is needed
+    if (targetOrientation.isEmpty() && rInput == 0) {
+      // assign last orientation when input is not 0 to the target orientation
+      if (previousRInput != 0) {
+        lockOrientation = Rotation2d.fromRadians(previousOrientation);
+      }
+      targetOrientation = Optional.of(lockOrientation);
+    } 
+
+    if (targetOrientation.isPresent()) { // if there targetOrientation wasn't empty to begin with OR maintain orientation is active
       double feedback =
           controller.calculate(currentOrientation, targetOrientation.get().getRadians());
 
@@ -87,8 +102,12 @@ public class DriveUsingController extends Command {
           feedback
               + (controller.getSetpoint().velocity
                   / SwerveSubsystem.getRotationalConstraints().maxVelocity);
+    } else { // if no targetOrientation, just use rotation stick input
+      rSpeed = rInput;
     }
 
+    previousRInput = rInput;
+    previousOrientation = currentOrientation;
     drivetrain.drive(xSpeed, ySpeed, rSpeed, true);
   }
 

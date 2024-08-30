@@ -44,6 +44,7 @@ import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -161,13 +162,18 @@ public class SwerveSubsystem extends SubsystemBase {
   private final SwerveDrive drivetrain;
   private final SwerveDrivePoseEstimator odometry;
 
+  private double previousRSpeed;
+  private Rotation2d lockedOrientation;
+  private Timer timer = new Timer();
+  private boolean isOrientationLocked = false;
+  private boolean isTimerRunning = false;
+
   // The current sensor state updated by the periodic method.
   private double rawOrientation; // The raw gyro orientation in radians.
   private double rawOrientationOffset; // The offset to the corrected orientation in radians.
   private Rotation2d orientation = new Rotation2d();
   private Pose2d lastVisionMeasurement = new Pose2d();
-  private Supplier<Optional<Rotation2d>> targetOrientationSupplier =
-      () -> Optional.empty(); // absolute location to keep the robot oriented to tag
+  private Supplier<Optional<Rotation2d>> targetOrientationSupplier;
 
   private DoubleLogEntry rawOrientationLog =
       new DoubleLogEntry(DataLogManager.getLog(), "/SwerveSubsystem/rawOrientation");
@@ -236,6 +242,7 @@ public class SwerveSubsystem extends SubsystemBase {
     odometry =
         new SwerveDrivePoseEstimator(
             kinematics, getOrientation(), drivetrain.getModulesPositions(), new Pose2d());
+    targetOrientationSupplier = this::getDesiredOrientation;
   }
 
   /** Initializes the sensor state. */
@@ -295,7 +302,16 @@ public class SwerveSubsystem extends SubsystemBase {
 
   /** Clears the orientation target. */
   public void disableAutoOrientation() {
-    targetOrientationSupplier = () -> Optional.empty();
+    targetOrientationSupplier = this::getDesiredOrientation;
+  }
+
+  /**
+   * Returns the desired orientation to correct drift.
+   *
+   * @return The desired orientation to correct drift.
+   */
+  private Optional<Rotation2d> getDesiredOrientation() {
+    return Optional.of(isOrientationLocked ? lockedOrientation : getOrientation());
   }
 
   /**
@@ -401,6 +417,19 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the x and y values are relative to field.
    */
   public void drive(double xSpeed, double ySpeed, double rSpeed, boolean fieldRelative) {
+    if (rSpeed != 0) {
+      isOrientationLocked = false;
+    } else if (previousRSpeed != 0) {
+      timer.reset();
+      timer.start();
+      isTimerRunning = true;
+    } else if (isTimerRunning && timer.get() > 0.5) {
+      isOrientationLocked = true;
+      timer.stop();
+      isTimerRunning = false;
+      lockedOrientation = getOrientation();
+    }
+    previousRSpeed = rSpeed;
     drivetrain.drive(xSpeed, ySpeed, rSpeed, fieldRelative);
   }
 

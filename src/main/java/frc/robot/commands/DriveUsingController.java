@@ -75,10 +75,9 @@ public class DriveUsingController extends Command {
 
     Optional<Rotation2d> targetOrientation = drivetrain.getTargetOrientation();
 
-    if (targetOrientation.isEmpty()) {
-      rSpeed = -xboxController.getRightX();
-      rSpeed = MathUtil.applyDeadband(rSpeed, DEADBAND) * inputScalar;
-    } else {
+    rSpeed = -xboxController.getRightX();
+    rSpeed = MathUtil.applyDeadband(rSpeed, DEADBAND) * inputScalar;
+    if (rSpeed == 0) {
       double currentOrientation = drivetrain.getOrientation().getRadians();
       double feedback =
           controller.calculate(currentOrientation, targetOrientation.get().getRadians());

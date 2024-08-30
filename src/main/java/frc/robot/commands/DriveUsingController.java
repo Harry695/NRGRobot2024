@@ -39,7 +39,6 @@ public class DriveUsingController extends Command {
 
   private double previousOrientation = 0;
   private double previousRInput = 0;
-  private Rotation2d lockOrientation;
   private Timer timer;
 
   /** Creates a new DriveUsingController. */
@@ -66,7 +65,6 @@ public class DriveUsingController extends Command {
     Rotation2d currentOrientation = drivetrain.getOrientation();
     controller.reset(currentOrientation.getRadians());
 
-    lockOrientation = currentOrientation;
     timer = new Timer();
   }
 
@@ -111,10 +109,12 @@ public class DriveUsingController extends Command {
         timer.reset();
         timer.start();
       }
-      if (timer.get() < 0.5) {
-        lockOrientation = Rotation2d.fromRadians(currentOrientation);
+      // allows time for omega to go to 0, then set target orientation
+      if (timer.get() > 0.5) {
+        targetOrientation = Optional.of(Rotation2d.fromRadians(currentOrientation));
+        timer.reset();
+        timer.stop();
       }
-      targetOrientation = Optional.of(lockOrientation);
     }
 
     if (targetOrientation

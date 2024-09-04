@@ -11,6 +11,7 @@ import com.nrg948.preferences.RobotPreferencesValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Subsystems;
@@ -19,6 +20,8 @@ import java.util.Optional;
 
 public class DriveUsingController extends Command {
   private static final double DEADBAND = 0.08;
+  private static final double LOCK_ORIENTATION_DELAY = 0.5; // Seconds
+  private static final double AUTO_ORIENTATION_SPEED_THRESHOLD = 0.05; // Meters per second
 
   @RobotPreferencesValue(column = 0, row = 1)
   public static final RobotPreferences.DoubleValue AUTO_ORIENT_KP =
@@ -35,6 +38,9 @@ public class DriveUsingController extends Command {
   private final SwerveSubsystem drivetrain;
   private final CommandXboxController xboxController;
   private ProfiledPIDController controller;
+
+  private double previousRInput = 0;
+  private final Timer lockOrientationTimer = new Timer();
 
   /** Creates a new DriveUsingController. */
   public DriveUsingController(Subsystems subsystems, CommandXboxController xboxController) {
@@ -58,26 +64,52 @@ public class DriveUsingController extends Command {
     controller.enableContinuousInput(-Math.PI, Math.PI);
     controller.setIZone(Math.toRadians(5));
     controller.reset(drivetrain.getOrientation().getRadians());
+
+    drivetrain.lockDesiredOrientation();
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    double rSpeed;
-    double xSpeed = -xboxController.getLeftY();
-    double ySpeed = -xboxController.getLeftX();
+    double rInput;
+    double xInput = -xboxController.getLeftY();
+    double yInput = -xboxController.getLeftX();
     double inputScalar = Math.max(1.0 - xboxController.getRightTriggerAxis(), 0.15);
 
     // Applies deadbands to x and y joystick values and multiples all
     // values with inputScalar which allows finer driving control.
-    xSpeed = MathUtil.applyDeadband(xSpeed, DEADBAND) * inputScalar;
-    ySpeed = MathUtil.applyDeadband(ySpeed, DEADBAND) * inputScalar;
+    xInput = MathUtil.applyDeadband(xInput, DEADBAND) * inputScalar;
+    yInput = MathUtil.applyDeadband(yInput, DEADBAND) * inputScalar;
 
     Optional<Rotation2d> targetOrientation = drivetrain.getTargetOrientation();
 
-    rSpeed = -xboxController.getRightX();
-    rSpeed = MathUtil.applyDeadband(rSpeed, DEADBAND) * inputScalar;
-    if (rSpeed == 0) {
+    rInput = -xboxController.getRightX();
+    rInput = MathUtil.applyDeadband(rInput, DEADBAND) * inputScalar;
+
+    if (targetOrientation.isEmpty()) {
+      if (rInput == 0) {
+        if (previousRInput != 0) {
+          lockOrientationTimer.reset();
+          lockOrientationTimer.start();
+        } else if (lockOrientationTimer.get() > LOCK_ORIENTATION_DELAY) {
+          drivetrain.lockDesiredOrientation();
+          lockOrientationTimer.stop();
+          targetOrientation = drivetrain.getTargetOrientation();
+        }
+      }
+    } else if (rInput != 0) {
+      if (previousRInput == 0) {
+        drivetrain.unlockDesiredOrientation();
+      }
+    }
+
+    previousRInput = rInput;
+
+    double rSpeed = rInput;
+
+    // If the orientation is locked, maintain the orientation using PID.
+    if (targetOrientation.isPresent()
+        && drivetrain.getSpeed() >= AUTO_ORIENTATION_SPEED_THRESHOLD) {
       double currentOrientation = drivetrain.getOrientation().getRadians();
       double feedback =
           controller.calculate(currentOrientation, targetOrientation.get().getRadians());
@@ -88,7 +120,7 @@ public class DriveUsingController extends Command {
                   / SwerveSubsystem.getRotationalConstraints().maxVelocity);
     }
 
-    drivetrain.drive(xSpeed, ySpeed, rSpeed, true);
+    drivetrain.drive(xInput, yInput, rSpeed, true);
   }
 
   // Called once the command ends or is interrupted.

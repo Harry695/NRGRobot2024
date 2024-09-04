@@ -44,7 +44,6 @@ import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -162,11 +161,8 @@ public class SwerveSubsystem extends SubsystemBase {
   private final SwerveDrive drivetrain;
   private final SwerveDrivePoseEstimator odometry;
 
-  private double previousRSpeed;
   private Rotation2d lockedOrientation;
-  private Timer timer = new Timer();
   private boolean isOrientationLocked = false;
-  private boolean isTimerRunning = false;
 
   // The current sensor state updated by the periodic method.
   private double rawOrientation; // The raw gyro orientation in radians.
@@ -311,7 +307,18 @@ public class SwerveSubsystem extends SubsystemBase {
    * @return The desired orientation to correct drift.
    */
   private Optional<Rotation2d> getDesiredOrientation() {
-    return Optional.of(isOrientationLocked ? lockedOrientation : getOrientation());
+    return isOrientationLocked ? Optional.of(lockedOrientation) : Optional.empty();
+  }
+
+  /** Locks the desired orientation. */
+  public void lockDesiredOrientation() {
+    isOrientationLocked = true;
+    lockedOrientation = getOrientation();
+  }
+
+  /** Unlocks the desired orientation. */
+  public void unlockDesiredOrientation() {
+    isOrientationLocked = false;
   }
 
   /**
@@ -417,19 +424,6 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the x and y values are relative to field.
    */
   public void drive(double xSpeed, double ySpeed, double rSpeed, boolean fieldRelative) {
-    if (rSpeed != 0) {
-      isOrientationLocked = false;
-    } else if (previousRSpeed != 0) {
-      timer.reset();
-      timer.start();
-      isTimerRunning = true;
-    } else if (isTimerRunning && timer.get() > 0.5) {
-      isOrientationLocked = true;
-      timer.stop();
-      isTimerRunning = false;
-      lockedOrientation = getOrientation();
-    }
-    previousRSpeed = rSpeed;
     drivetrain.drive(xSpeed, ySpeed, rSpeed, fieldRelative);
   }
 
@@ -449,6 +443,11 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public ChassisSpeeds getChassisSpeeds() {
     return drivetrain.getChassisSpeeds();
+  }
+
+  public double getSpeed() {
+    ChassisSpeeds chassisSpeeds = getChassisSpeeds();
+    return Math.hypot(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
   }
 
   public SwerveModuleState[] getModuleStates() {

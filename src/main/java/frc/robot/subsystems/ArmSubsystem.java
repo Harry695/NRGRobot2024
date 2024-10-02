@@ -243,7 +243,7 @@ public class ArmSubsystem extends SubsystemBase {
       } else {
         double feedback = controller.calculate(currentAngle);
         double cosine = Math.cos(currentAngle);
-        feedback = MathUtil.clamp(feedback, 0.4 + -5.50 * cosine, -0.6 + 9.50 * cosine);
+        // feedback = MathUtil.clamp(feedback, 0.4 + -5.50 * cosine, -0.6 + 9.50 * cosine);
         // double error = controller.getPositionError();
         // System.out.println("error: " + Math.toDegrees(error));
         // if (Math.abs(error) < -LARGE_ANGLE_ERROR) {
@@ -255,8 +255,8 @@ public class ArmSubsystem extends SubsystemBase {
         trapezoidStateVelocityLog.append(setpoint.velocity);
         trapezoidStatePositionErrorLog.append(controller.getPositionError());
         trapezoidStateVelocityErrorlog.append(controller.getVelocityError());
-        double feedForward = 0;
-        // this.feedForward.calculate(currentAngle + CG_ANGLE_OFFSET, setpoint.velocity);
+        double feedForward =
+            this.feedForward.calculate(currentAngle + CG_ANGLE_OFFSET, setpoint.velocity);
         setMotorVoltages(feedForward + feedback);
       }
     }
